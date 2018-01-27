@@ -178,7 +178,17 @@
                                 "tar -xzvf jdk* -C /app/\n",
                                 "export JAVA_HOME=/app/jdk-9\n",
                                 "export PATH=$PATH:$JAVA_HOME/bin\n",
-                                "source /etc/environment\n"
+                                "source /etc/environment\n",
+                                "wget https://raw.githubusercontent.com/russest3/dev/master/java/java.csh\n",
+                                "wget https://raw.githubusercontent.com/russest3/dev/master/java/java.sh\n",
+                                "cp java.* /etc/profile.d/ && chmod 755 /etc/profile.d/java.*\n",
+                                "wget http://download.jboss.org/wildfly/11.0.0.Final/wildfly-11.0.0.Final.zip\n",
+                                "unzip wildfly-11.0.0.Final.zip -d /app/\n",
+                                "echo JBOSS_HOME='/app/wildfly-11.0.0.Final' >> /app/wildfly-11.0.0.Final/bin/standalone.conf\n",
+                                "echo JAVA_HOME='/app/jdk-9.0.4' >> /app/wildfly-11.0.0.Final/bin/standalone.conf\n",
+                                "IP=$(ifconfig | grep 'inet addr' | grep -v 127.0.0.1 | cut -d ':' -f 2 | awk '{ print $1 }')\n",
+                                "sed -i s/127.0.0.1/$IP/g /app/wildfly-11.0.0.Final/standalone/configuration/standalone.xml\n",
+                                "/app/wildfly-11.0.0.Final/bin/standalone.sh &\n"
                             ]
                         ]
                     }
