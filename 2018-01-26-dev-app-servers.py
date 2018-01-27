@@ -110,14 +110,8 @@ t.add_resource(ec2.SecurityGroup(
             IpProtocol="tcp",
             FromPort="22",
             ToPort="22",
-            CidrIp="10.0.0.0/8",
-        ),
-        ec2.SecurityGroupRule(
-            IpProtocol="tcp",
-            FromPort="80",
-            ToPort=ApplicationPort,
-            CidrIp="0.0.0.0/0",
-        ),
+            CidrIp="10.10.0.0/16",
+        ),        
     ],
     VpcId=Ref("VpcId"),
 ))
@@ -166,14 +160,15 @@ t.add_resource(elb.LoadBalancer(
     SecurityGroups=[Ref("LoadBalancerSecurityGroup")],
 ))
 
-ud = Base64(Join('\n', [
-    "#!/bin/bash",
-	"yum -y update",
-	"mkdir /app",
-	"wget --no-cookies --no-check-certificate --header 'Cookie: gpw_e24=http%3A%2F%2Fwww.oracle.com%2F; oraclelicense=accept-securebackup-cookie' 'http://download.oracle.com/otn-pub/java/jdk/8u60-b27/jdk-8u60-linux-x64.rpm'",
-    "yum localinstall jdk-8u60-linux-x64.rpm",
-    "wget http://download.jboss.org/wildfly/10.1.0.Final/wildfly-10.1.0.Final.zip",
-    "unzip wildfly-10.1.0.Final.zip -d /app/"    
+ud = Base64(Join('', [
+    "#!/bin/bash\n",
+	"yum -y update\n",
+	"mkdir /app\n",
+    "curl -C - -LR#OH 'Cookie: oraclelicense=accept-securebackup-cookie' -k 'http://download.oracle.com/otn-pub/java/jdk/9.0.4+11/c2514751926b4512b076cc82f959763f/jdk-9.0.4_linux-x64_bin.tar.gz'\n",
+    "tar -xzvf jdk* -C /app/\n",
+    "export JAVA_HOME=/app/jdk-9\n",
+    "export PATH=$PATH:$JAVA_HOME/bin\n",
+    "source /etc/environment\n"
 ]))
 
 t.add_resource(Role(
