@@ -1,0 +1,183 @@
+{
+    "Description": "Maven Repo",
+    "Parameters": {
+        "InstanceType": {
+            "AllowedValues": [
+                "t2.micro",
+                "t2.small",
+                "t2.medium",
+                "t2.large"
+            ],
+            "ConstraintDescription": "must be a valid EC2 T2 instance type.",
+            "Default": "t2.micro",
+            "Description": "WebServer EC2 instance type",
+            "Type": "String"
+        },
+        "KeyPair": {
+            "ConstraintDescription": "must be the name of an existing EC2KeyPair.",
+            "Description": "Name of an existing EC2KeyPair to SSH",
+            "Type": "AWS::EC2::KeyPair::KeyName"
+        },
+        "PrivateSubnet": {
+            "ConstraintDescription": "PrivateSubnet",
+            "Description": "PrivateSubnet",
+            "Type": "List<AWS::EC2::Subnet::Id>"
+        },
+        "VpcId": {
+            "Description": "VPC",
+            "Type": "AWS::EC2::VPC::Id"
+        }
+    },
+    "Resources": {
+        "InstanceProfile": {
+            "Properties": {
+                "Path": "/",
+                "Roles": [
+                    {
+                        "Ref": "Role"
+                    }
+                ]
+            },
+            "Type": "AWS::IAM::InstanceProfile"
+        },
+        "MavenRepoSecurityGroup": {
+            "Properties": {
+                "GroupDescription": "MavenRepo Security Group",
+                "SecurityGroupIngress": [
+                    {
+                        "CidrIp": "10.10.0.0/16",
+                        "FromPort": "8081",
+                        "IpProtocol": "tcp",
+                        "ToPort": "8081"
+                    },
+                    {
+                        "CidrIp": "10.10.0.0/16",
+                        "FromPort": "22",
+                        "IpProtocol": "tcp",
+                        "ToPort": "22"
+                    },
+                    {
+                        "CidrIp": "10.10.0.0/16",
+                        "FromPort": "80",
+                        "IpProtocol": "tcp",
+                        "ToPort": "80"
+                    }
+                ],
+                "VpcId": {
+                    "Ref": "VpcId"
+                }
+            },
+            "Type": "AWS::EC2::SecurityGroup"
+        },
+        "Policy": {
+            "Properties": {
+                "PolicyDocument": {
+                    "Statement": [
+                        {
+                            "Action": [
+                                "s3:*"
+                            ],
+                            "Effect": "Allow",
+                            "Resource": [
+                                "*"
+                            ]
+                        }
+                    ]
+                },
+                "PolicyName": "AllowS3",
+                "Roles": [
+                    {
+                        "Ref": "Role"
+                    }
+                ]
+            },
+            "Type": "AWS::IAM::Policy"
+        },
+        "Role": {
+            "Properties": {
+                "AssumeRolePolicyDocument": {
+                    "Statement": [
+                        {
+                            "Action": [
+                                "sts:AssumeRole"
+                            ],
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": [
+                                    "ec2.amazonaws.com"
+                                ]
+                            }
+                        }
+                    ]
+                }
+            },
+            "Type": "AWS::IAM::Role"
+        },
+        "server": {
+            "Properties": {
+                "ImageId": "ami-4bf3d731",
+                "InstanceType": {
+                    "Ref": "InstanceType"
+                },
+                "KeyName": {
+                    "Ref": "KeyPair"
+                },
+                "NetworkInterfaces": [
+                    {
+                        "AssociatePublicIpAddress": "false",
+                        "DeviceIndex": "0",
+                        "GroupSet": [
+                            {
+                                "Ref": "MavenRepoSecurityGroup"
+                            }
+                        ],
+                        "SubnetId": {
+                            "Fn::Select": [
+                                "0",
+                                {
+                                    "Ref": "PrivateSubnet"
+                                }
+                            ]
+                        }
+                    }
+                ],
+                "UserData": {
+                    "Fn::Base64": {
+                        "Fn::Join": [
+                            "",
+                            [
+                                "#!/bin/bash\n",
+                                "yum -y install epel-release\n",
+                                "yum -y install python-pip\n",
+                                "pip install pystache\n",
+                                "pip install argparse\n",
+                                "pip install python-daemon\n",
+                                "pip install requests\n",
+                                "yum -y update\n",
+                                "cd /opt\n",
+                                "curl -O https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz\n",
+                                "tar -xvpf aws-cfn-bootstrap-latest.tar.gz\n",
+                                "cd aws-cfn-bootstrap-1.4/\n",
+                                "python setup.py build\n",
+                                "python setup.py install\n",
+                                "ln -s /usr/init/redhat/cfn-hup /etc/init.d/cfn-hup\n",
+                                "chmod 775 /usr/init/redhat/cfn-hup\n",
+                                "cd /opt\n",
+                                "mkdir aws\n",
+                                "cd aws\n",
+                                "mkdir bin\n",
+                                "ln -s /usr/bin/cfn-hup /opt/aws/bin/cfn-hup\n",
+                                "yum install -y yum-utils device-mapper-persistent-data lvm2\n",
+                                "yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo\n",
+                                "yum -y install docker-ce\n",
+                                "systemctl start docker\n",
+                                "systemctl enable docker\n"
+                            ]
+                        ]
+                    }
+                }
+            },
+            "Type": "AWS::EC2::Instance"
+        }
+    }
+}

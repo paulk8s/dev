@@ -1,0 +1,148 @@
+"""Generating CloudFormation template."""
+from troposphere import (
+    Base64,
+    ec2,
+    GetAtt,
+    Join,
+    Output,
+    Parameter,
+    Ref,
+    Template,
+    elasticloadbalancing as elb,
+)
+
+from troposphere.iam import (
+    InstanceProfile,
+    PolicyType as IAMPolicy,
+    Role,
+)
+
+from awacs.aws import (
+    Action,
+    Allow,
+    Policy,
+    Principal,
+    Statement,
+)
+
+from awacs.sts import AssumeRole
+
+ApplicationName = "jenkins"
+ApplicationPort = "8080"
+
+t = Template()
+
+t.add_description("Jenkins Server")
+
+t.add_parameter(Parameter(
+    "KeyPair",
+    Description="Name of an existing EC2 KeyPair to SSH",
+    Type="AWS::EC2::KeyPair::KeyName",
+    ConstraintDescription="must be the name of an existing EC2 KeyPair.",
+))
+
+t.add_parameter(Parameter(
+    "VpcId",
+    Type="AWS::EC2::VPC::Id",
+    Description="VPC",
+    ConstraintDescription="VPC"
+))
+
+t.add_parameter(Parameter(
+    "PrivateSubnet",
+    Description="PrivateSubnet",
+    Type="List<AWS::EC2::Subnet::Id>",
+))
+
+t.add_parameter(Parameter(
+    'InstanceType',
+    Type='String',
+    Description='WebServer EC2 instance type',
+    Default='t2.micro',
+    AllowedValues=[
+        't2.micro',
+        't2.small',
+        't2.medium',
+        't2.large',
+    ],
+    ConstraintDescription='must be a valid EC2 T2 instance type.',
+))
+
+t.add_resource(ec2.SecurityGroup(
+    "SecurityGroup",
+    GroupDescription="Allow TCP/{} access".format(ApplicationPort),
+    SecurityGroupIngress=[
+        ec2.SecurityGroupRule(
+            IpProtocol="tcp",
+            FromPort="{}".format(ApplicationPort),
+            ToPort="{}".format(ApplicationPort),
+            CidrIp="10.10.0.0/16",
+        ),        
+    ],
+    VpcId=Ref("VpcId"),
+))
+
+ud = Base64(Join('', [
+    "#!/bin/bash\n",
+    "yum -y update\n",
+    "mkdir /app\n",
+    "curl -C - -LR#OH 'Cookie: oraclelicense=accept-securebackup-cookie' -k 'http://download.oracle.com/otn-pub/java/jdk/9.0.4+11/c2514751926b4512b076cc82f959763f/jdk-9.0.4_linux-x64_bin.tar.gz'\n",
+    "tar -xzvf jdk* -C /app/\n",
+    "export JAVA_HOME=/app/jdk-9\n",
+    "export PATH=$PATH:$JAVA_HOME/bin\n",
+    "source /etc/environment\n",
+    "wget https://raw.githubusercontent.com/russest3/dev/master/java/java.csh\n",
+    "wget https://raw.githubusercontent.com/russest3/dev/master/java/java.sh\n",
+    "cp java.* /etc/profile.d/ && chmod 755 /etc/profile.d/java.*\n",
+    "wget -O /etc/yum.repos.d/jenkins.repo http://pkg.jenkins-ci.org/redhat-stable/jenkins.repo\n",
+    "rpm -import http://pkg.jenkins-ci.org/redhat-stable/jenkins-ci.org.key\n",
+    "yum -y install jenkins\n",
+    "systemctl start jenkins\n",
+    "systemctl enable jenkins\n"    
+]))
+
+t.add_resource(Role(
+    "Role",
+    AssumeRolePolicyDocument=Policy(
+        Statement=[
+            Statement(
+                Effect=Allow,
+                Action=[AssumeRole],
+                Principal=Principal("Service", ["ec2.amazonaws.com"])
+            )
+        ]
+    )
+))
+
+t.add_resource(InstanceProfile(
+    "InstanceProfile",
+    Path="/",
+    Roles=[Ref("Role")]
+))
+
+t.add_resource(IAMPolicy(
+    "Policy",
+    PolicyName="AllowS3",
+    PolicyDocument=Policy(
+        Statement=[
+            Statement(
+                Effect=Allow,
+                Action=[Action("s3", "*")],
+                Resource=["*"])
+        ]
+    ),
+    Roles=[Ref("Role")]
+))
+
+t.add_resource(ec2.Instance(
+    "instance",
+    ImageId="ami-a4c7edb2",
+    InstanceType=Ref("InstanceType"),
+    SecurityGroups=[Ref("SecurityGroup")],
+    KeyName=Ref("KeyPair"),
+    UserData=ud,
+    IamInstanceProfile=Ref("InstanceProfile"),
+    SubnetId="subnet-e8d7f68c"
+))
+
+print t.to_json()

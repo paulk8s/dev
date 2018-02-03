@@ -1,0 +1,200 @@
+# Converted from ElasticBeanstalk_Nodejs.template located at:
+# http://aws.amazon.com/cloudformation/aws-cloudformation-templates/
+
+from troposphere import (
+    Base64,
+    ec2,
+    GetAtt,
+    Join,
+    Select,
+    Output,
+    Parameter,
+    Ref,
+    Template,
+    FindInMap,
+    elasticloadbalancing as elb,    
+)
+
+from troposphere.elasticbeanstalk import (
+    Application, ApplicationVersion, ConfigurationTemplate, Environment,
+    SourceBundle, OptionSettings
+)
+
+from troposphere.iam import (
+    InstanceProfile,
+    PolicyType as IAMPolicy,
+    Role,
+)
+
+from awacs.aws import Allow, Statement, Action, Principal, Policy
+from awacs.sts import AssumeRole
+
+
+t = Template()
+
+t.add_version()
+
+t.add_description("Maven Repo cloudformation Stack")
+
+t.add_parameter(Parameter(
+    "KeyPair",
+    Description="Name of an existing EC2 KeyPair to SSH",
+    Type="AWS::EC2::KeyPair::KeyName",
+    ConstraintDescription="must be the name of an existing EC2 KeyPair.",
+))
+
+t.add_parameter(Parameter(
+    "VpcId",
+    Type="AWS::EC2::VPC::Id",
+    Description="VPC",
+    ConstraintDescription="VPC"
+))
+
+t.add_parameter(Parameter(
+    "PrivateSubnet",
+    Description="PrivateSubnet",
+    Type="List<AWS::EC2::Subnet::Id>",
+    ConstraintDescription="PrivateSubnet",
+))
+
+t.add_parameter(Parameter(
+    'InstanceType',
+    Type='String',
+    Description='WebServer EC2 instance type',
+    Default='t2.micro',
+    AllowedValues=[
+        't2.micro',
+        't2.small',
+        't2.medium',
+        't2.large',
+    ],
+    ConstraintDescription='must be a valid EC2 T2 instance type.',
+))
+
+
+
+
+t.add_resource(ec2.SecurityGroup(
+    "SecurityGroup",
+    GroupDescription="Allow TCP/8081",
+    SecurityGroupIngress=[
+        ec2.SecurityGroupRule(
+            IpProtocol="tcp",
+            FromPort="8081",
+            ToPort="8081",
+            CidrIp="10.10.0.0/16",
+        ),        
+    ],
+    VpcId=Ref("VpcId"),
+))
+
+t.add_mapping("Region2Principal", {
+    'us-east-1': {
+        'EC2Principal': 'ec2.amazonaws.com',
+        'OpsWorksPrincipal': 'opsworks.amazonaws.com'}
+    }
+)
+
+t.add_resource(Role(
+    "WebServerRole",
+    AssumeRolePolicyDocument=Policy(
+        Statement=[
+            Statement(
+                Effect=Allow, Action=[AssumeRole],
+                Principal=Principal(
+                    "Service", [
+                        FindInMap(
+                            "Region2Principal",
+                            Ref("AWS::Region"), "EC2Principal")
+                    ]
+                )
+            )
+        ]
+    ),
+    Path="/"
+))
+
+t.add_resource(IAMPolicy(
+    "WebServerRolePolicy",
+    PolicyName="WebServerRole",
+    PolicyDocument=Policy(
+        Statement=[
+            Statement(Effect=Allow, NotAction=Action("iam", "*"),
+                      Resource=["*"])
+        ]
+    ),
+    Roles=[Ref("WebServerRole")]
+))
+
+t.add_resource(InstanceProfile(
+    "WebServerInstanceProfile",
+    Path="/",
+    Roles=[Ref("WebServerRole")]
+))
+
+sampleApp = t.add_resource(Application(
+    "SampleApplication",
+    Description="Maven Repo"
+))
+
+t.add_resource(ApplicationVersion(
+    "SampleApplicationVersion",
+    Description="Version 1.0",
+    ApplicationName=Ref(sampleApp),
+    SourceBundle=SourceBundle(
+        S3Bucket="elasticbeanstalk-us-east-1-225986554236",
+        S3Key="MavenRepoZip"
+    )
+))
+
+t.add_resource(ConfigurationTemplate(
+    "SampleConfigurationTemplate",
+    ApplicationName=Ref("SampleApplication"),
+    Description="SSH access to Maven Repo",
+    SolutionStackName="64bit Amazon Linux 2014.03 v1.0.9 running Node.js",
+    OptionSettings=[
+        OptionSettings(
+            Namespace="aws:ec2:vpc",
+            OptionName="VpcId",
+            Value=Ref("VpcId")
+        ),
+        OptionSettings(
+            Namespace="aws:ec2:vpc",
+            OptionName="Subnets",
+            Value=Ref("PrivateSubnet")
+        ),
+        OptionSettings(
+            Namespace="aws:autoscaling:launchconfiguration",
+            OptionName="EC2KeyName",
+            Value=Ref("KeyPair")
+        ),
+        OptionSettings(
+            Namespace="aws:autoscaling:launchconfiguration",
+            OptionName="InstanceType",
+            Value=Ref("InstanceType")
+        ),
+        OptionSettings(
+            Namespace="aws:autoscaling:launchconfiguration",
+            OptionName="IamInstanceProfile",
+            Value=Ref("WebServerInstanceProfile")
+        )
+    ]
+))
+
+sampleEnv = t.add_resource(Environment(
+    "SampleEnvironment",
+    Description="Maven Repo",
+    ApplicationName=Ref(sampleApp),
+    TemplateName=Ref("SampleConfigurationTemplate"),
+    VersionLabel=Ref("SampleApplicationVersion")
+))
+
+t.add_output(
+    Output(
+        "URL",
+        Description="URL of the AWS Elastic Beanstalk Environment",
+        Value=Join("", ["http://", GetAtt("SampleEnvironment", "EndpointURL")])
+    )
+)
+
+print(t.to_json())
