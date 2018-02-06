@@ -76,8 +76,8 @@ t.add_resource(ec2.SecurityGroup(
     SecurityGroupIngress=[
         ec2.SecurityGroupRule(
             IpProtocol="tcp",
-            FromPort="80",
-            ToPort="80",
+            FromPort="8080",
+            ToPort="8080",
             CidrIp="10.10.0.0/16",
         ),
         ec2.SecurityGroupRule(
@@ -86,12 +86,6 @@ t.add_resource(ec2.SecurityGroup(
             ToPort="22",
             CidrIp="10.10.0.0/16",
         ),
-        ec2.SecurityGroupRule(
-            IpProtocol="tcp",
-            FromPort="443",
-            ToPort="443",
-            CidrIp="10.10.0.0/16",
-        ),        
     ],
     VpcId=Ref("VpcId"),
 ))
@@ -110,6 +104,13 @@ ud = Base64(Join('', [
     "cp java.* /etc/profile.d/ && chmod 755 /etc/profile.d/java.*\n",
     "wget -O /etc/yum.repos.d/jenkins.repo https://pkg.jenkins.io/redhat-stable/jenkins.repo && rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io.key\n",
     "yum -y install jenkins\n",
+    "rm -f rm -f /usr/bin/java\n",
+    "ln -s /app/jdk-9.0.4/bin/java /usr/bin/java\n",
+    "sed -i 's/\/etc\/alternatives\/java/\/usr\/bin\/java/g' /etc/init.d/jenkins\n",
+    "sed -i 's/\/usr\/lib\/jvm\/java-1.8.0\/bin\/java//g' /etc/init.d/jenkins\n",
+    "sed -i 's/\/usr\/lib\/jvm\/jre-1.8.0\/bin\/java//g' /etc/init.d/jenkins\n",
+    "sed -i 's/\/usr\/lib\/jvm\/java-1.7.0\/bin\/java//g' /etc/init.d/jenkins\n",
+    "sed -i 's/\/usr\/lib\/jvm\/jre-1.7.0\/bin\/java//g' /etc/init.d/jenkins\n",
     "service jenkins start\n",
     "chkconfig jenkins on\n",
 ]))
