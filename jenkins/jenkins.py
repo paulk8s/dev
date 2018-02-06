@@ -98,7 +98,20 @@ t.add_resource(ec2.SecurityGroup(
 
 ud = Base64(Join('', [
     "#!/bin/bash\n",
-    "apt-get -y install ansible\n"
+    "yum -y update\n",
+    "mkdir /app\n",
+    "curl -C - -LR#OH 'Cookie: oraclelicense=accept-securebackup-cookie' -k 'http://download.oracle.com/otn-pub/java/jdk/9.0.4+11/c2514751926b4512b076cc82f959763f/jdk-9.0.4_linux-x64_bin.tar.gz'\n",
+    "tar -xzvf jdk* -C /app/\n",
+    "export JAVA_HOME=/app/jdk-9\n",
+    "export PATH=$PATH:$JAVA_HOME/bin\n",
+    "source /etc/environment\n",
+    "wget https://raw.githubusercontent.com/russest3/dev/master/java/java.csh\n",
+    "wget https://raw.githubusercontent.com/russest3/dev/master/java/java.sh\n",
+    "cp java.* /etc/profile.d/ && chmod 755 /etc/profile.d/java.*\n",
+    "wget -O /etc/yum.repos.d/jenkins.repo https://pkg.jenkins.io/redhat-stable/jenkins.repo && rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io.key\n",
+    "yum -y install jenkins\n",
+    "service jenkins start\n",
+    "chkconfig jenkins on\n",
 ]))
 
 t.add_resource(Role(
@@ -136,7 +149,7 @@ t.add_resource(IAMPolicy(
 
 t.add_resource(ec2.Instance(
     "server",
-    ImageId="ami-f426598e",
+    ImageId="ami-97785bed",
     UserData=ud,
     InstanceType="t2.micro",
     KeyName=Ref("KeyPair"),

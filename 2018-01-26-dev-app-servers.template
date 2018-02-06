@@ -154,7 +154,7 @@
                 "IamInstanceProfile": {
                     "Ref": "InstanceProfile"
                 },
-                "ImageId": "ami-a4c7edb2",
+                "ImageId": "ami-97785bed",
                 "InstanceType": {
                     "Ref": "InstanceType"
                 },
@@ -247,7 +247,7 @@
                         "CidrIp": "0.0.0.0/0",
                         "FromPort": "80",
                         "IpProtocol": "tcp",
-                        "ToPort": "3000"
+                        "ToPort": "80"
                     }
                 ],
                 "VpcId": {
