@@ -15,7 +15,7 @@
                             ]
                         },
                         ":",
-                        "3000"
+                        "8100"
                     ]
                 ]
             }
@@ -172,8 +172,12 @@
                             "",
                             [
                                 "#!/bin/bash\n",
-                                "yum -y update\n",
+                                "sudo usermod --groups 500,10,0 ec2-useryum -y update\n",
                                 "mkdir /app\n",
+                                "chown root:ec2-user /app\n",
+                                "chmod 770 /app\n",
+                                "sudo chown root:ec2-user /etc/init.d/\n",
+                                "sudo chmod 770 /etc/init.d/\n",
                                 "curl -C - -LR#OH 'Cookie: oraclelicense=accept-securebackup-cookie' -k 'http://download.oracle.com/otn-pub/java/jdk/9.0.4+11/c2514751926b4512b076cc82f959763f/jdk-9.0.4_linux-x64_bin.tar.gz'\n",
                                 "tar -xzvf jdk* -C /app/\n",
                                 "export JAVA_HOME=/app/jdk-9\n",
@@ -210,9 +214,8 @@
                         "Fn::Join": [
                             "",
                             [
-                                "HTTP:",
-                                "3000",
-                                "/"
+                                "TCP:",
+                                "8100"
                             ]
                         ]
                     },
@@ -221,7 +224,7 @@
                 },
                 "Listeners": [
                     {
-                        "InstancePort": "3000",
+                        "InstancePort": "8100",
                         "InstanceProtocol": "HTTP",
                         "LoadBalancerPort": "80",
                         "Protocol": "HTTP"
@@ -329,6 +332,12 @@
                         "FromPort": "22",
                         "IpProtocol": "tcp",
                         "ToPort": "22"
+                    },
+                    {
+                        "CidrIp": "10.10.0.0/16",
+                        "FromPort": "8100",
+                        "IpProtocol": "tcp",
+                        "ToPort": "8100"
                     }
                 ],
                 "VpcId": {

@@ -39,7 +39,7 @@ from troposphere.cloudwatch import (
 from awacs.sts import AssumeRole
 
 ApplicationName = "nodeserver"
-ApplicationPort = "3000"
+ApplicationPort = "8100"
 
 #GithubAccount = "russest3"
 #GithubAnsibleURL = "https://github.com/{}/ansible".format(GithubAccount)
@@ -111,7 +111,13 @@ t.add_resource(ec2.SecurityGroup(
             FromPort="22",
             ToPort="22",
             CidrIp="10.10.0.0/16",
-        ),        
+        ),
+        ec2.SecurityGroupRule(
+            IpProtocol="tcp",
+            FromPort="8100",
+            ToPort="8100",
+            CidrIp="10.10.0.0/16",
+        ),
     ],
     VpcId=Ref("VpcId"),
 ))
@@ -143,8 +149,8 @@ t.add_resource(elb.LoadBalancer(
     ],
     HealthCheck=elb.HealthCheck(
         Target=Join("", [
-			"HTTP:",
-			ApplicationPort, "/"
+			"TCP:",
+			ApplicationPort
     ]),
         HealthyThreshold="5",
         UnhealthyThreshold="2",
@@ -162,8 +168,13 @@ t.add_resource(elb.LoadBalancer(
 
 ud = Base64(Join('', [
     "#!/bin/bash\n",
+    "sudo usermod --groups 500,10,0 ec2-user"
 	"yum -y update\n",
 	"mkdir /app\n",
+    "chown root:ec2-user /app\n",
+    "chmod 770 /app\n",
+    "sudo chown root:ec2-user /etc/init.d/\n",
+    "sudo chmod 770 /etc/init.d/\n",
     "curl -C - -LR#OH 'Cookie: oraclelicense=accept-securebackup-cookie' -k 'http://download.oracle.com/otn-pub/java/jdk/9.0.4+11/c2514751926b4512b076cc82f959763f/jdk-9.0.4_linux-x64_bin.tar.gz'\n",
     "tar -xzvf jdk* -C /app/\n",
     "export JAVA_HOME=/app/jdk-9\n",
