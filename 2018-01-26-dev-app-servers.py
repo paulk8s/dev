@@ -170,6 +170,10 @@ ud = Base64(Join('', [
     "#!/bin/bash\n",
     "sudo usermod --groups 500,10,0 ec2-user"
 	"yum -y update\n",
+    "yum install -y awslogs\n",
+    "sleep 30\n",
+    "service awslogs start\n",
+    "chkconfig awslogs on\n",
 	"mkdir /app\n",
     "chown root:ec2-user /app\n",
     "chmod 770 /app\n",
@@ -219,6 +223,10 @@ t.add_resource(IAMPolicy(
             Statement(
                 Effect=Allow,
                 Action=[Action("s3", "*")],
+                Resource=["*"]),
+            Statement(
+                Effect=Allow,
+                Action=[Action("logs", "*")],
                 Resource=["*"])
         ]
     ),

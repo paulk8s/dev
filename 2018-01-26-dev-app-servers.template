@@ -173,6 +173,9 @@
                             [
                                 "#!/bin/bash\n",
                                 "sudo usermod --groups 500,10,0 ec2-useryum -y update\n",
+                                "yum install -y awslogs\n",
+                                "service awslogs start\n",
+                                "chkconfig awslogs on\n",
                                 "mkdir /app\n",
                                 "chown root:ec2-user /app\n",
                                 "chmod 770 /app\n",
@@ -266,6 +269,15 @@
                         {
                             "Action": [
                                 "s3:*"
+                            ],
+                            "Effect": "Allow",
+                            "Resource": [
+                                "*"
+                            ]
+                        },
+                        {
+                            "Action": [
+                                "logs:*"
                             ],
                             "Effect": "Allow",
                             "Resource": [
