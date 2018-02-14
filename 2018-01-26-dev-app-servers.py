@@ -168,10 +168,14 @@ t.add_resource(elb.LoadBalancer(
 
 ud = Base64(Join('', [
     "#!/bin/bash\n",
-    "sudo usermod --groups 500,10,0 ec2-user"
+    "echo 'ec2-user   ALL=(ALL)   NOPASSWD: ALL' >> /etc/sudoers\n",
 	"yum -y update\n",
     "yum install -y awslogs\n",
     "sleep 30\n",
+    "chown root:ec2-user /etc/awslogs\n",
+    "chmod 770 /etc/awslogs\n",
+    "chown root:ec2-user /etc/awslogs/awslogs.conf\n",
+    "chmod 770 /etc/awslogs/awslogs.conf\n",
     "service awslogs start\n",
     "chkconfig awslogs on\n",
 	"mkdir /app\n",
