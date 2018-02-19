@@ -42,19 +42,13 @@ ApplicationPort = "80"
 
 t = Template()
 
-t.add_description("Kubernetes Cluster")
+t.add_description("Kubernetes Nodes")
 
 t.add_parameter(Parameter(
     "KeyPair",
     Description="Name of an existing EC2 KeyPair to SSH",
     Type="AWS::EC2::KeyPair::KeyName",
     ConstraintDescription="must be the name of an existing EC2 KeyPair.",
-))
-
-t.add_parameter(Parameter(
-    "VpcId",
-    Type="AWS::EC2::VPC::Id",
-    Description="VPC"
 ))
 
 t.add_parameter(Parameter(
@@ -65,10 +59,9 @@ t.add_parameter(Parameter(
 ))
 
 t.add_parameter(Parameter(
-    "PrivateSubnet",
-    Description="PrivateSubnet",
-    Type="List<AWS::EC2::Subnet::Id>",
-    ConstraintDescription="PrivateSubnet"
+    "VpcId",
+    Type="AWS::EC2::VPC::Id",
+    Description="VPC"
 ))
 
 t.add_parameter(Parameter(
@@ -93,29 +86,9 @@ t.add_parameter(Parameter(
 ))
 
 t.add_resource(ec2.SecurityGroup(
-    "Nodes",
-    GroupDescription="Master Node Security Group",
-    SecurityGroupIngress=[
-        ec2.SecurityGroupRule(
-            IpProtocol="tcp",
-            FromPort="22",
-            ToPort="22",
-            CidrIp="0.0.0.0/0",
-        ),
-    ],
-    VpcId=Ref("VpcId"),
-))
-
-t.add_resource(ec2.SecurityGroup(
-    "MasterNodes",
-    GroupDescription="Master Node Security Group",
-    SecurityGroupIngress=[
-        ec2.SecurityGroupRule(
-            IpProtocol="tcp",
-            FromPort="443",
-            ToPort="443",
-            CidrIp="0.0.0.0/0",
-        ),
+    "NodesSecurityGroup",
+    GroupDescription="Nodes Security Group",
+    SecurityGroupIngress=[        
         ec2.SecurityGroupRule(
             IpProtocol="tcp",
             FromPort="22",
@@ -269,7 +242,7 @@ ud = Base64(Join('', [
     '  # In case of failure checking integrity of release, retry.\n'
     '  until try-download-release; do\n'
     '    sleep 15\n'
-    '    echo "couldnt download release. Retrying..."\n'
+    '    echo "Couldnt download release. Retrying..."\n'
     '  done\n'
     '\n'
     '  echo "Running nodeup"\n'
@@ -297,70 +270,12 @@ ud = Base64(Join('', [
     '  - max-file=5\n'
     '  storage: overlay,aufs\n'
     '  version: 1.13.1\n'
-    'encryptionConfig: null\n'
-    'kubeAPIServer:\n'
-    '  address: 127.0.0.1\n'
-    '  admissionControl:\n'
-    '  - Initializers\n'
-    '  - NamespaceLifecycle\n'
-    '  - LimitRanger\n'
-    '  - ServiceAccount\n'
-    '  - PersistentVolumeLabel\n'
-    '  - DefaultStorageClass\n'
-    '  - DefaultTolerationSeconds\n'
-    '  - NodeRestriction\n'
-    '  - Priority\n'
-    '  - ResourceQuota\n'
-    '  allowPrivileged: true\n'
-    '  anonymousAuth: false\n'
-    '  apiServerCount: 1\n'
-    '  authorizationMode: AlwaysAllow\n'
-    '  cloudProvider: aws\n'
-    '  etcdServers:\n'
-    '  - http://127.0.0.1:4001\n'
-    '  etcdServersOverrides:\n'
-    '  - /events#http://127.0.0.1:4002\n'
-    '  image: gcr.io/google_containers/kube-apiserver:v1.8.6\n'
-    '  insecurePort: 8080\n'
-    '  kubeletPreferredAddressTypes:\n'
-    '  - InternalIP\n'
-    '  - Hostname\n'
-    '  - ExternalIP\n'
-    '  logLevel: 2\n'
-    '  requestheaderAllowedNames:\n'
-    '  - aggregator\n'
-    '  requestheaderExtraHeaderPrefixes:\n'
-    '  - X-Remote-Extra-\n'
-    '  requestheaderGroupHeaders:\n'
-    '  - X-Remote-Group\n'
-    '  requestheaderUsernameHeaders:\n'
-    '  - X-Remote-User\n'
-    '  securePort: 443\n'
-    '  serviceClusterIPRange: 100.64.0.0/13\n'
-    '  storageBackend: etcd2\n'
-    'kubeControllerManager:\n'
-    '  allocateNodeCIDRs: true\n'
-    '  attachDetachReconcileSyncPeriod: 1m0s\n'
-    '  cloudProvider: aws\n'
-    '  clusterCIDR: 100.96.0.0/11\n'
-    '  clusterName: dev.stevesdomain.local\n'
-    '  configureCloudRoutes: false\n'
-    '  image: gcr.io/google_containers/kube-controller-manager:v1.8.6\n'
-    '  leaderElection:\n'
-    '    leaderElect: true\n'
-    '  logLevel: 2\n'
-    '  useServiceAccountCredentials: true\n'
     'kubeProxy:\n'
     '  clusterCIDR: 100.96.0.0/11\n'
     '  cpuRequest: 100m\n'
     '  featureGates: null\n'
     '  hostnameOverride: "@aws"\n'
     '  image: gcr.io/google_containers/kube-proxy:v1.8.6\n'
-    '  logLevel: 2\n'
-    'kubeScheduler:\n'
-    '  image: gcr.io/google_containers/kube-scheduler:v1.8.6\n'
-    '  leaderElection:\n'
-    '    leaderElect: true\n'
     '  logLevel: 2\n'
     'kubelet:\n'
     '  allowPrivileged: true\n'
@@ -380,32 +295,13 @@ ud = Base64(Join('', [
     '  podInfraContainerImage: gcr.io/google_containers/pause-amd64:3.0\n'
     '  podManifestPath: /etc/kubernetes/manifests\n'
     '  requireKubeconfig: true\n'
-    'masterKubelet:\n'
-    '  allowPrivileged: true\n'
-    '  cgroupRoot: /\n'
-    '  cloudProvider: aws\n'
-    '  clusterDNS: 100.64.0.10\n'
-    '  clusterDomain: cluster.local\n'
-    '  enableDebuggingHandlers: true\n'
-    '  evictionHard: memory.available<100Mi,nodefs.available<10%,nodefs.inodesFree<5%,imagefs.available<10%,imagefs.inodesFree<5%\n'
-    '  featureGates:\n'
-    '    ExperimentalCriticalPodAnnotation: "true"\n'
-    '  hostnameOverride: "@aws"\n'
-    '  kubeconfigPath: /var/lib/kubelet/kubeconfig\n'
-    '  logLevel: 2\n'
-    '  networkPluginName: cni\n'
-    '  nonMasqueradeCIDR: 100.64.0.0/10\n'
-    '  podInfraContainerImage: gcr.io/google_containers/pause-amd64:3.0\n'
-    '  podManifestPath: /etc/kubernetes/manifests\n'
-    '  registerSchedulable: false\n'
-    '  requireKubeconfig: true\n'
     '\n'
     '__EOF_CLUSTER_SPEC\n'
     '\n'
     'cat > ig_spec.yaml << "__EOF_IG_SPEC"\n'
     'kubelet: null\n'
     'nodeLabels:\n'
-    '  kops.k8s.io/instancegroup: master-us-east-1b\n'
+    '  kops.k8s.io/instancegroup: nodes\n'
     'taints: null\n'
     '\n'
     '__EOF_IG_SPEC\n'
@@ -418,13 +314,11 @@ ud = Base64(Join('', [
     '- f62360d3351bed837ae3ffcdee65e9d57511695a@https://kubeupv2.s3.amazonaws.com/kops/1.8.0/linux/amd64/utils.tar.gz\n'
     'ClusterName: dev.stevesdomain.local\n'
     'ConfigBase: s3://dev-stevesdomain-local-state-store/dev.stevesdomain.local\n'
-    'InstanceGroupName: master-us-east-1b\n'
+    'InstanceGroupName: nodes\n'
     'Tags:\n'
-    '- _automatic_upgrades\n',
-    '- _aws\n',
-    '- _kubernetes_master\n',
-    '- _networking_cni\n',
-
+    '- _automatic_upgrades\n'
+    '- _aws\n'
+    '- _networking_cni\n'
     'channels:\n'
     '- s3://dev-stevesdomain-local-state-store/dev.stevesdomain.local/addons/bootstrap-channel.yaml\n'
     'protokubeImage:\n'
@@ -452,7 +346,7 @@ t.add_resource(Role(
 ))
 
 t.add_resource(InstanceProfile(
-    "MasterInstanceProfile",
+    "NodesInstanceProfile",
     Path="/",
     Roles=[Ref("Role")]
 ))
@@ -476,17 +370,17 @@ t.add_resource(IAMPolicy(
 ))
 
 t.add_resource(ec2.Instance(
-    "KubernetesMaster",
+    "KubernetesNodes",
     ImageId="ami-8ec0e1f4",
     UserData=ud,
     InstanceType=Ref("InstanceType"),
     KeyName=Ref("KeyPair"),
-    IamInstanceProfile=Ref("MasterInstanceProfile"),
+    IamInstanceProfile=Ref("NodesInstanceProfile"),
     NetworkInterfaces=[
         ec2.NetworkInterfaceProperty(
-            GroupSet=[Ref("MasterNodes")],
+            GroupSet=[Ref("NodesSecurityGroup")],
             AssociatePublicIpAddress='false',
-            SubnetId="subnet-b18f9bfa",
+            SubnetId="subnet-d1c1d09a",
             DeviceIndex='0',
         )]
 ))

@@ -38,21 +38,11 @@ from troposphere.cloudwatch import (
 
 from awacs.sts import AssumeRole
 
-ApplicationName = "nodeserver"
 ApplicationPort = "8100"
-
-#GithubAccount = "russest3"
-#GithubAnsibleURL = "https://github.com/{}/ansible".format(GithubAccount)
-
-#AnsiblePullCmd = \
-#    "/usr/local/bin/ansible-pull -U {} {}.yml -i localhost".format(
-#        GithubAnsibleURL,
-#        ApplicationName
-#    )
 
 t = Template()
 
-t.add_description("Effective DevOps in AWS: HelloWorld web application")
+t.add_description("CloudFormation Template - AppServers")
 
 t.add_parameter(Parameter(
     "KeyPair",
@@ -72,13 +62,6 @@ t.add_parameter(Parameter(
     Description="PublicSubnet",
     Type="List<AWS::EC2::Subnet::Id>",
     ConstraintDescription="PublicSubnet"
-))
-
-t.add_parameter(Parameter(
-    "PrivateSubnet",
-    Description="PrivateSubnet",
-    Type="List<AWS::EC2::Subnet::Id>",
-    ConstraintDescription="PrivateSubnet"
 ))
 
 t.add_parameter(Parameter(
@@ -104,20 +87,14 @@ t.add_parameter(Parameter(
 
 t.add_resource(ec2.SecurityGroup(
     "SecurityGroup",
-    GroupDescription="Allow SSH access".format(ApplicationPort),
+    GroupDescription="AppServers Security Group",
     SecurityGroupIngress=[
         ec2.SecurityGroupRule(
             IpProtocol="tcp",
             FromPort="22",
             ToPort="22",
-            CidrIp="10.10.0.0/16",
-        ),
-        ec2.SecurityGroupRule(
-            IpProtocol="tcp",
-            FromPort="8100",
-            ToPort="8100",
-            CidrIp="10.10.0.0/16",
-        ),
+            CidrIp="10.10.93.149/32",
+        ),        
     ],
     VpcId=Ref("VpcId"),
 ))
@@ -149,8 +126,8 @@ t.add_resource(elb.LoadBalancer(
     ],
     HealthCheck=elb.HealthCheck(
         Target=Join("", [
-			"TCP:",
-			ApplicationPort
+            "TCP:",
+            ApplicationPort
     ]),
         HealthyThreshold="5",
         UnhealthyThreshold="2",
@@ -168,40 +145,13 @@ t.add_resource(elb.LoadBalancer(
 
 ud = Base64(Join('', [
     "#!/bin/bash\n",
-    "echo 'ec2-user   ALL=(ALL)   NOPASSWD: ALL' >> /etc/sudoers\n",
-	"yum -y update\n",
-    "yum install -y awslogs\n",
-    "sleep 30\n",
-    "chown root:ec2-user /etc/awslogs\n",
-    "chmod 770 /etc/awslogs\n",
-    "chown root:ec2-user /etc/awslogs/awslogs.conf\n",
-    "chmod 770 /etc/awslogs/awslogs.conf\n",
-    "service awslogs start\n",
-    "chkconfig awslogs on\n",
-	"mkdir /app\n",
-    "chown root:ec2-user /app\n",
-    "chmod 770 /app\n",
-    "sudo chown root:ec2-user /etc/init.d/\n",
-    "sudo chmod 770 /etc/init.d/\n",
-    "curl -C - -LR#OH 'Cookie: oraclelicense=accept-securebackup-cookie' -k 'http://download.oracle.com/otn-pub/java/jdk/9.0.4+11/c2514751926b4512b076cc82f959763f/jdk-9.0.4_linux-x64_bin.tar.gz'\n",
-    "tar -xzvf jdk* -C /app/\n",
-    "export JAVA_HOME=/app/jdk-9\n",
-    "export PATH=$PATH:$JAVA_HOME/bin\n",
-    "source /etc/environment\n",
-    "wget https://raw.githubusercontent.com/russest3/dev/master/java/java.csh\n",
-    "wget https://raw.githubusercontent.com/russest3/dev/master/java/java.sh\n",
-    "cp java.* /etc/profile.d/ && chmod 755 /etc/profile.d/java.*\n",
-    "wget http://download.jboss.org/wildfly/11.0.0.Final/wildfly-11.0.0.Final.zip\n",
-    "unzip wildfly-11.0.0.Final.zip -d /app/\n",
-    "echo JBOSS_HOME='/app/wildfly-11.0.0.Final' >> /app/wildfly-11.0.0.Final/bin/standalone.conf\n",
-    "echo JAVA_HOME='/app/jdk-9.0.4' >> /app/wildfly-11.0.0.Final/bin/standalone.conf\n",
     "IP=$(hostname -I)\n",
     "sed -i s/127.0.0.1/$IP/g /app/wildfly-11.0.0.Final/standalone/configuration/standalone.xml\n",
     "/app/wildfly-11.0.0.Final/bin/standalone.sh &\n"
 ]))
 
 t.add_resource(Role(
-    "Role",
+    "AppServersRole",
     AssumeRolePolicyDocument=Policy(
         Statement=[
             Statement(
@@ -214,9 +164,9 @@ t.add_resource(Role(
 ))
 
 t.add_resource(InstanceProfile(
-    "InstanceProfile",
+    "AppServersInstanceProfile",
     Path="/",
-    Roles=[Ref("Role")]
+    Roles=[Ref("AppServersRole")]
 ))
 
 t.add_resource(IAMPolicy(
@@ -234,17 +184,17 @@ t.add_resource(IAMPolicy(
                 Resource=["*"])
         ]
     ),
-    Roles=[Ref("Role")]
+    Roles=[Ref("AppServersRole")]
 ))
 
 t.add_resource(LaunchConfiguration(
     "LaunchConfiguration",
     UserData=ud,
-    ImageId="ami-97785bed",
+    ImageId="ami-eaa5bf90",
     KeyName=Ref("KeyPair"),
     SecurityGroups=[Ref("SecurityGroup")],
     InstanceType=Ref("InstanceType"),
-    IamInstanceProfile=Ref("InstanceProfile"),
+    IamInstanceProfile=Ref("AppServersInstanceProfile"),
 ))
 
 t.add_resource(AutoScalingGroup(
@@ -254,60 +204,7 @@ t.add_resource(AutoScalingGroup(
     MinSize=1,
     MaxSize=1,
     LoadBalancerNames=[Ref("LoadBalancer")],
-    VPCZoneIdentifier="subnet-dac1f391",
-))
-
-t.add_resource(ScalingPolicy(
-    "ScaleDownPolicy",
-    ScalingAdjustment="-1",
-    AutoScalingGroupName=Ref("AutoscalingGroup"),
-    AdjustmentType="ChangeInCapacity",
-))
-
-t.add_resource(ScalingPolicy(
-    "ScaleUpPolicy",
-    ScalingAdjustment="1",
-    AutoScalingGroupName=Ref("AutoscalingGroup"),
-    AdjustmentType="ChangeInCapacity",
-))
-
-t.add_resource(Alarm(
-    "CPUTooLow",
-    AlarmDescription="Alarm if CPU too low",
-    Namespace="AWS/EC2",
-    MetricName="CPUUtilization",
-    Dimensions=[
-        MetricDimension(
-            Name="AutoScalingGroupName",
-            Value=Ref("AutoscalingGroup")
-        ),
-    ],
-    Statistic="Average",
-    Period="60",
-    EvaluationPeriods="1",
-    Threshold="30",
-    ComparisonOperator="LessThanThreshold",
-    AlarmActions=[Ref("ScaleDownPolicy")],
-))
-
-t.add_resource(Alarm(
-    "CPUTooHigh",
-    AlarmDescription="Alarm if CPU too high",
-    Namespace="AWS/EC2",
-    MetricName="CPUUtilization",
-    Dimensions=[
-        MetricDimension(
-            Name="AutoScalingGroupName",
-            Value=Ref("AutoscalingGroup")
-        ),
-    ],
-    Statistic="Average",
-    Period="60",
-    EvaluationPeriods="1",
-    Threshold="60",
-    ComparisonOperator="GreaterThanThreshold",
-    AlarmActions=[Ref("ScaleUpPolicy"), ],
-    InsufficientDataActions=[Ref("ScaleUpPolicy")],
+    VPCZoneIdentifier=Ref("PublicSubnet"),
 ))
 
 t.add_output(Output(
