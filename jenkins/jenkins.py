@@ -93,7 +93,7 @@ t.add_resource(ec2.SecurityGroup(
 ud = Base64(Join('', [
     "#!/bin/bash\n",
     "yum -y update\n",
-    "curl http://10.10.63.156:8081/artifactory/thirdparty/jdk-8u161-linux-x64.rpm -u admin:password --output jdk-8u161-linux-x64.rpm\n",
+    "curl http://10.0.1.11:8081/artifactory/thirdparty/jdk-8u161-linux-x64.rpm -u admin:password --output jdk-8u161-linux-x64.rpm\n",
     "yum -y localinstall jdk-8u161-linux-x64.rpm\n",
     "/usr/sbin/alternatives --install /usr/bin/java java /usr/java/jdk1.8.0_11/bin/java 20000\n",
     "/usr/sbin/alternatives --set java /usr/java/jdk1.8.0_161/jre/bin/java\n",
@@ -106,6 +106,7 @@ ud = Base64(Join('', [
     "sed -i s/\$releasever/6/g /etc/yum.repos.d/epel-apache-maven.repo\n",
     "yum install -y apache-maven\n",
     "cd /usr/bin\n",
+    "rm -f maven\n",
     "ln -s mvn maven\n",
     "service jenkins start\n",
     "chkconfig jenkins on\n",
