@@ -99,7 +99,7 @@ ud = Base64(Join('', [
     "/usr/sbin/alternatives --set java /usr/java/jdk1.8.0_161/jre/bin/java\n",
     "wget -O /etc/yum.repos.d/jenkins.repo https://pkg.jenkins.io/redhat/jenkins.repo\n",
     "rpm --import https://pkg.jenkins.io/redhat/jenkins.io.key\n",
-    "yum -y install jenkins\n",
+    "yum -y install jenkins python-simplejson\n",
     "service jenkins stop\n",    
     "yum -y remove java-1.7.0-openjdk.x86_64\n",
     "wget http://repos.fedorapeople.org/repos/dchen/apache-maven/epel-apache-maven.repo -O /etc/yum.repos.d/epel-apache-maven.repo\n",
@@ -112,7 +112,7 @@ ud = Base64(Join('', [
     "chkconfig jenkins on\n",
     "sed -i 's/enabled=0/enabled=1/g' /etc/yum.repos.d/epel.repo\n",
     "yum -y install ansible\n",
-    "yum -y install git\n",
+    "yum -y install git\n",    
 ]))
 
 t.add_resource(Role(
