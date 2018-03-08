@@ -112,7 +112,9 @@ ud = Base64(Join('', [
     "chkconfig jenkins on\n",
     "sed -i 's/enabled=0/enabled=1/g' /etc/yum.repos.d/epel.repo\n",
     "yum -y install ansible\n",
-    "yum -y install git\n",    
+    "yum -y install git python-lxml\n",
+    "pip install lxml\n",
+    "chmod 0600 /var/lib/jenkins/.ssh/id_rsa*\n"
 ]))
 
 t.add_resource(Role(
