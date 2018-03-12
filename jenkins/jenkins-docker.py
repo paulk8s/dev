@@ -161,10 +161,13 @@ ud = Base64(Join('', [
     "ln -s /usr/bin/cfn-hup /opt/aws/bin/cfn-hup\n",
     "yum install -y yum-utils device-mapper-persistent-data lvm2\n",
     "yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo\n",
-    "yum -y install docker-ce\n",
+    "yum -y install docker-ce git\n",
     "systemctl start docker\n",
     "systemctl enable docker\n",
-    "sudo docker run -d --restart always --name MavenRepo -p 8081:8081 -v /opt/artifactory/data:/var/opt/jfrog/artifactory/data -v /opt/artifactory/logs:/var/opt/jfrog/artifactory/logs -v /opt/artifactory/etc:/var/opt/jfrog/artifactory/etc docker.bintray.io/jfrog/artifactory-oss:latest\n"
+    "docker pull jenkins/jenkins\n",
+    "docker run -d --restart always --name jenkins -p 8080:8080 -v jenkins_home:/var/jenkins_home jenkins/jenkins:lts\n",
+    "cd /var/lib/docker/volumes/jenkins_home/_data\n",
+    "git clone https://github.com/russest3/ansible.git\n",
 ]))
 
 t.add_resource(ec2.Instance(

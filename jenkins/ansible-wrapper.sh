@@ -41,12 +41,11 @@ if [[ "$#" -ne 6 || -z "$ANSIBLE_REPO" || -z "$ANSIBLE_LIBRARY" ]]; then
     exit 1
 fi
 
-sshkey="$HOME/.ssh/id_rsa.pub"
+sshkey="$HOME/.ssh/id_rsa"
 if [[ -r "${sshkey}_${1}" ]]; then
     sshkey="${sshkey}_${1}"
 fi
 
-#export ANSIBLE_LOGIN_OPTS="--user=jenkins --private-key=$sshkey"
-export ANSIBLE_LOGIN_OPTS="--user=jenkins"
+export ANSIBLE_LOGIN_OPTS="--user=jenkins --private-key=$sshkey"
 
-$ANSIBLE_REPO/run.sh $1 $2 $3 $4 $5 $6
+~/ansible/run.sh $1 $2 $3 $4 $5 $6

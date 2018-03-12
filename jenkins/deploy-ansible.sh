@@ -6,4 +6,4 @@ TAGS="all"
 if [[ "$UPDATE_CONFIGURATION" == 'true' ]]; then
         TAGS="$TAGS,configure"
 fi
-/bin/ansible-wrapper.sh $1 $2 $POM_GROUPID $POM_ARTIFACTID $POM_VERSION $TAGS
+~/ansible-wrapper.sh $1 $2 $POM_GROUPID $POM_ARTIFACTID $POM_VERSION $TAGS

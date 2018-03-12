@@ -26,13 +26,13 @@
           </snapshots>
           <id>releases</id>
           <name>releases</name>
-          <url>http://10.0.0.10:8081/artifactory/releases</url>
+          <url>http://10.0.1.20:8081/artifactory/releases</url>
         </repository>
         <repository>
           <snapshots />
           <id>snapshots</id>
           <name>snapshots</name>
-          <url>http://10.0.0.10:8081/artifactory/snapshots</url>
+          <url>http://10.0.1.20:8081/artifactory/snapshots</url>
         </repository>
       </repositories>      
       <id>artifactory</id>
