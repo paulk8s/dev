@@ -1,0 +1,53 @@
+{
+  "id": "/jenkins",
+  "backoffFactor": 1.15,
+  "backoffSeconds": 1,
+  "container": {
+    "portMappings": [
+      {
+        "containerPort": 8080,
+        "hostPort": 10000,
+        "protocol": "tcp",
+        "servicePort": 10000,
+        "name": "jenkins-endpoint"
+      }
+    ],
+    "type": "MESOS",
+    "volumes": [
+      {
+        "containerPath": "jenkins_home",
+        "hostPath": "/var/jenkins_home",
+        "mode": "RW"
+      }
+    ],
+    "docker": {
+      "image": "jenkins",
+      "forcePullImage": false,
+      "parameters": []
+    }
+  },
+  "cpus": 0.5,
+  "disk": 100,
+  "instances": 1,
+  "maxLaunchDelaySeconds": 3600,
+  "mem": 768,
+  "gpus": 0,
+  "networks": [
+    {
+      "mode": "container/bridge"
+    }
+  ],
+  "requirePorts": false,
+  "upgradeStrategy": {
+    "maximumOverCapacity": 1,
+    "minimumHealthCapacity": 1
+  },
+  "killSelection": "YOUNGEST_FIRST",
+  "unreachableStrategy": {
+    "inactiveAfterSeconds": 0,
+    "expungeAfterSeconds": 0
+  },
+  "healthChecks": [],
+  "fetch": [],
+  "constraints": []
+}
