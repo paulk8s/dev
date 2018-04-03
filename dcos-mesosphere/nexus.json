@@ -1,0 +1,37 @@
+{
+    "type": "MESOS",
+    "volumes": [
+        {
+            "mode": "RW",
+            "container_path": "nexus-data",
+            "host_path": "/mnt/nexus-data"
+        }
+    ],
+    "mesos": {
+        "image": {
+            "type": "DOCKER",
+            "docker": {
+                "name": "sonatype/nexus3:3.5.0"
+            },
+            "cached": true
+        }
+    },
+    "network_infos": [
+        {
+            "ip_addresses": [
+                {
+                    "protocol": "IPv4"
+                }
+            ],
+            "name": "mesos-bridge",
+            "labels": {},
+            "port_mappings": [
+                {
+                    "host_port": 12126,
+                    "container_port": 8081,
+                    "protocol": "tcp"
+                }
+            ]
+        }
+    ]
+}

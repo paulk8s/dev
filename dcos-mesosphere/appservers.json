@@ -1,0 +1,48 @@
+{
+  "id": "/app-servers",
+  "containers": [
+    {
+      "name": "container-1",
+      "resources": {
+        "cpus": 0.1,
+        "mem": 128
+      },
+      "endpoints": [
+        {
+          "name": "helloworld",
+          "hostPort": 0,
+          "protocol": [
+            "tcp"
+          ]
+        }
+      ],
+      "volumeMounts": [
+        {
+          "name": "app-server-data",
+          "mountPath": "/opt/jboss/wildfly/standalone/deployments/"
+        }
+      ]
+    }
+  ],
+  "scaling": {
+    "instances": 1,
+    "kind": "fixed"
+  },
+  "networks": [
+    {
+      "mode": "host"
+    }
+  ],
+  "volumes": [
+    {
+      "host": "/tmp/app-server-data",
+      "name": "app-server-data"
+    }
+  ],
+  "fetch": [],
+  "scheduling": {
+    "placement": {
+      "constraints": []
+    }
+  }
+}
