@@ -1,0 +1,64 @@
+{
+  "id": "/jenkins-slave",
+  "constraints": [
+    [
+      "hostname",
+      "IS",
+      "10.10.0.9"
+    ]
+  ],
+  "acceptedResourceRoles": ["*"],
+  "container": {
+    "portMappings": [
+      {
+        "containerPort": 8080,
+        "hostPort": 7322,
+        "protocol": "tcp",
+        "servicePort": 10008
+      },
+      {
+        "containerPort": 50000,
+        "hostPort": 4658,
+        "protocol": "tcp",
+        "servicePort": 10010
+      }       
+    ],
+    "type": "MESOS",
+    "volumes": [
+      {
+        "containerPath": "/home/jenkins",
+        "hostPath": "/mnt/jenkins",
+        "mode": "RW"
+      }
+    ],
+    "docker": {
+      "image": "jenkins/slave",
+      "forcePullImage": true,
+      "privileged": false,
+      "parameters": []
+    }
+  },
+  "cpus": 0.5,
+  "disk": 0,
+  "instances": 1,
+  "maxLaunchDelaySeconds": 3600,
+  "mem": 1024,
+  "gpus": 0,
+  "networks": [
+    {
+      "mode": "container/bridge"
+    }
+  ],
+  "requirePorts": false,
+  "upgradeStrategy": {
+    "maximumOverCapacity": 1,
+    "minimumHealthCapacity": 1
+  },
+  "killSelection": "YOUNGEST_FIRST",
+  "unreachableStrategy": {
+    "inactiveAfterSeconds": 0,
+    "expungeAfterSeconds": 0
+  },
+  "healthChecks": [],
+  "cmd": "java -jar agent.jar -jnlpUrl file://$PWD/slave-agent.jnlp -secret ef6b280b35a8154f6d9f7e83388d60763819b908ccf09ce0680ffdda31becd18 -workDir /home/jenkins"
+}
