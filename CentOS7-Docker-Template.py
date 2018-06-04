@@ -127,12 +127,17 @@ t.add_resource(InstanceProfile(
 ud = Base64(Join('', [
     "#!/bin/bash\n",
     "yum -y update && yum -y upgrade\n",
-    "/usr/bin/easy_install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz 2>&1 >> /var/log/initial_user-data.log\n", 
+    "/usr/bin/easy_install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz 2>&1 >> /var/log/initial_user-data.log\n",
+    "yum -y install epel-release\n",
+    "yum -y install python-pip\n",
+    "pip install --upgrade pip\n",
+    "pip install docker-compose\n",
     "yum install -y yum-utils device-mapper-persistent-data lvm2\n",
     "yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo\n",
     "yum -y install docker-ce\n",
     "systemctl start docker\n",
-    "systemctl enable docker\n"
+    "systemctl enable docker\n",
+    "yum -y install git\n",
 ]))
 
 t.add_resource(ec2.Instance(
